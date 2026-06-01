@@ -867,6 +867,9 @@
     async function loadOnlineRecords(successMessage = "Loaded from Google Sheet") {
       if (!API_URL) return;
       try {
+        if (pendingAdds.length) {
+          await syncPendingAdds();
+        }
         showSaved("Loading Google Sheet...");
         const data = await fetchSheetRecords();
         if (!Array.isArray(data)) throw new Error("Google Sheet response was not a list");
@@ -879,6 +882,19 @@
       } catch (error) {
         showSaved("Could not reach Google Sheet. Showing saved browser copy.");
         console.warn(error);
+      }
+    }
+
+    async function syncPendingAdds() {
+      const unsynced = pendingAdds.slice();
+      if (!unsynced.length) return;
+      showSaved(`Syncing ${unsynced.length} pending row${unsynced.length === 1 ? "" : "s"} to Google Sheet...`);
+      for (const record of unsynced) {
+        try {
+          await postSheetAction({ type: "add", record });
+        } catch (error) {
+          console.warn(error);
+        }
       }
     }
 
@@ -973,11 +989,31 @@
     }
 
     async function postSheetAction(payload) {
-      const result = await postSheetActionJsonp(payload);
+      let result;
+      try {
+        result = await postSheetActionJsonp(payload);
+      } catch (error) {
+        await postSheetActionNoCors(payload);
+        result = { success: true, fallback: true };
+      }
       if (!result || result.success !== true) {
-        throw new Error((result && result.error) || "Google Sheet save failed");
+        try {
+          await postSheetActionNoCors(payload);
+          result = { success: true, fallback: true };
+        } catch {
+          throw new Error((result && result.error) || "Google Sheet save failed");
+        }
       }
       await new Promise((resolve) => window.setTimeout(resolve, 600));
+    }
+
+    async function postSheetActionNoCors(payload) {
+      await fetch(API_URL, {
+        method: "POST",
+        mode: "no-cors",
+        body: JSON.stringify(payload),
+        headers: { "Content-Type": "text/plain;charset=utf-8" }
+      });
     }
 
     function postSheetActionJsonp(payload) {
