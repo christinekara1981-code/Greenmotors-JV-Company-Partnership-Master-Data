@@ -1,1002 +1,120 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Joint Venture Dashboard</title>
-  <style>
-    :root {
-      --ink: #15202b;
-      --muted: #5d6975;
-      --line: #d8dee6;
-      --paper: #f7f8f3;
-      --panel: #ffffff;
-      --green: #176b55;
-      --teal: #0f7b8f;
-      --gold: #b7791f;
-      --red: #b42318;
-      --blue: #2b5cab;
-      --shadow: 0 18px 42px rgba(31, 41, 55, 0.10);
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      color: var(--ink);
-      background: var(--paper);
-      font-family: Arial, Helvetica, sans-serif;
-      line-height: 1.45;
-    }
-
-    button, input, select, textarea {
-      font: inherit;
-    }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: rgba(255, 255, 255, 0.94);
-      border-bottom: 1px solid var(--line);
-      backdrop-filter: blur(10px);
-    }
-
-    .topbar-inner {
-      max-width: 1320px;
-      margin: 0 auto;
-      padding: 14px 22px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 220px;
-    }
-
-    .brand-mark {
-      width: 38px;
-      height: 38px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, var(--green), var(--teal));
-      display: grid;
-      place-items: center;
-      color: white;
-      font-weight: 800;
-      letter-spacing: 0;
-    }
-
-    .brand h1 {
-      margin: 0;
-      font-size: 18px;
-      line-height: 1.1;
-    }
-
-    .brand span {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 3px;
-    }
-
-    .toolbar {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .btn {
-      border: 1px solid var(--line);
-      background: var(--panel);
-      color: var(--ink);
-      min-height: 38px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      white-space: nowrap;
-    }
-
-    .btn:hover { border-color: #9aa7b4; }
-    .btn.primary {
-      background: var(--green);
-      border-color: var(--green);
-      color: white;
-    }
-
-    .btn.danger {
-      color: var(--red);
-    }
-
-    .btn:focus-visible,
-    input:focus-visible,
-    select:focus-visible,
-    textarea:focus-visible {
-      outline: 3px solid rgba(15, 123, 143, 0.24);
-      outline-offset: 2px;
-    }
-
-    main {
-      max-width: 1320px;
-      margin: 0 auto;
-      padding: 24px 22px 50px;
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 18px;
-    }
-
-    .kpi {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      padding: 16px;
-      min-height: 118px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .kpi small {
-      color: var(--muted);
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: 11px;
-      letter-spacing: 0.08em;
-    }
-
-    .kpi strong {
-      font-size: 34px;
-      line-height: 1;
-      margin-top: 12px;
-    }
-
-    .kpi span {
-      color: var(--muted);
-      font-size: 13px;
-      margin-top: 10px;
-    }
-
-    .dashboard {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 18px;
-      align-items: start;
-    }
-
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-    }
-
-    .panel-head {
-      padding: 16px 18px 10px;
-      display: flex;
-      justify-content: space-between;
-      gap: 14px;
-      align-items: center;
-    }
-
-    .panel h2 {
-      font-size: 18px;
-      margin: 0;
-    }
-
-    .panel-body {
-      padding: 12px 18px 18px;
-    }
-
-    .filters {
-      display: grid;
-      grid-template-columns: 1.2fr repeat(3, minmax(150px, 0.4fr));
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .field label {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-      padding: 10px 11px;
-      color: var(--ink);
-      min-height: 40px;
-    }
-
-    textarea {
-      min-height: 82px;
-      resize: vertical;
-    }
-
-    .chart-row {
-      display: grid;
-      gap: 10px;
-    }
-
-    .bar-line {
-      display: grid;
-      grid-template-columns: minmax(120px, 180px) 1fr 42px;
-      gap: 10px;
-      align-items: center;
-      min-height: 34px;
-    }
-
-    .bar-label {
-      color: var(--ink);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .bar-track {
-      height: 12px;
-      background: #edf1f5;
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
-    .bar-fill {
-      height: 100%;
-      border-radius: inherit;
-      background: var(--teal);
-      min-width: 4px;
-    }
-
-    .bar-fill.gold { background: var(--gold); }
-    .bar-fill.green { background: var(--green); }
-    .bar-fill.blue { background: var(--blue); }
-
-    .status-list {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .status-chip {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px;
-      min-height: 80px;
-      background: #fcfcfb;
-    }
-
-    .status-chip strong {
-      display: block;
-      font-size: 24px;
-    }
-
-    .status-chip span {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .table-wrap {
-      overflow: auto;
-      border-top: 1px solid var(--line);
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      min-width: 1080px;
-    }
-
-    th, td {
-      text-align: left;
-      padding: 11px 12px;
-      border-bottom: 1px solid var(--line);
-      vertical-align: top;
-      font-size: 13px;
-    }
-
-    th {
-      position: sticky;
-      top: 67px;
-      z-index: 5;
-      background: #f0f4f5;
-      color: #2c3946;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    td.notes {
-      min-width: 260px;
-      max-width: 380px;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: #e9f3f0;
-      color: var(--green);
-      font-weight: 700;
-      font-size: 12px;
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .status-control {
-      min-width: 150px;
-      padding: 7px 9px;
-      min-height: 34px;
-      font-size: 13px;
-    }
-
-    .table-input,
-    .table-textarea {
-      min-width: 150px;
-      padding: 7px 9px;
-      min-height: 34px;
-      font-size: 13px;
-      border-radius: 6px;
-      background: #fff;
-    }
-
-    .table-textarea {
-      min-width: 260px;
-      min-height: 64px;
-    }
-
-    .delete-btn {
-      border-color: #f3c8c3;
-      color: var(--red);
-      min-height: 34px;
-      padding: 7px 10px;
-      font-size: 13px;
-    }
-
-    .save-state {
-      color: var(--muted);
-      font-size: 12px;
-      margin-left: 8px;
-      white-space: nowrap;
-    }
-
-    .drawer {
-      margin-top: 18px;
-      display: none;
-    }
-
-    .drawer.open { display: block; }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .form-grid .wide { grid-column: span 2; }
-    .form-grid .full { grid-column: 1 / -1; }
-
-    .form-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      padding-top: 14px;
-    }
-
-    .empty {
-      color: var(--muted);
-      padding: 26px 18px;
-      text-align: center;
-    }
-
-    .file-input {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-    }
-
-    @media (max-width: 980px) {
-      .summary-grid,
-      .dashboard,
-      .filters,
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .form-grid .wide,
-      .form-grid .full {
-        grid-column: auto;
-      }
-
-      .topbar-inner {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .toolbar {
-        width: 100%;
-        justify-content: flex-start;
-      }
-
-      th { top: 128px; }
-    }
-
-    @media (max-width: 560px) {
-      main { padding: 16px 12px 36px; }
-      .topbar-inner { padding: 12px; }
-      .toolbar .btn { flex: 1 1 auto; }
-      .bar-line { grid-template-columns: 1fr 44px; }
-      .bar-track { grid-column: 1 / -1; grid-row: 2; }
-      .status-list { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="brand" aria-label="Joint Venture Dashboard">
-        <div class="brand-mark">JV</div>
-        <div>
-          <h1>Joint Venture Dashboard</h1>
-          <span>Master company interest tracker</span>
-        </div>
-      </div>
-      <div class="toolbar">
-        <button class="btn primary" id="toggleForm" type="button">Add New Data</button>
-        <button class="btn" id="exportCsv" type="button">Export CSV</button>
-        <button class="btn danger" id="resetData" type="button">Reset</button>
-      </div>
-    </div>
-  </header>
-
-  <main>
-    <section class="summary-grid" aria-label="Dashboard summary">
-      <article class="kpi">
-        <small>Total companies</small>
-        <strong id="kpiTotal">0</strong>
-        <span id="kpiTotalSub">Current master list</span>
-      </article>
-      <article class="kpi">
-        <small>Active follow-up</small>
-        <strong id="kpiFollowUp">0</strong>
-        <span>Pending, waiting, contract, or sent actions</span>
-      </article>
-      <article class="kpi">
-        <small>Locations</small>
-        <strong id="kpiLocations">0</strong>
-        <span id="topLocation">Top location: -</span>
-      </article>
-      <article class="kpi">
-        <small>Named GM owners</small>
-        <strong id="kpiOwners">0</strong>
-        <span id="topOwner">Top owner: -</span>
-      </article>
-    </section>
-
-    <section class="drawer panel" id="formDrawer" aria-label="Add new company data">
-      <div class="panel-head">
-        <h2>Add New Company</h2>
-      </div>
-      <div class="panel-body">
-        <form id="entryForm">
-          <div class="form-grid">
-            <div class="field">
-              <label for="company">Company Name</label>
-              <input id="company" name="company" required autocomplete="organization">
-            </div>
-            <div class="field">
-              <label for="location">Location</label>
-              <input id="location" name="location" required>
-            </div>
-            <div class="field">
-              <label for="contactPerson">Contact Person</label>
-              <input id="contactPerson" name="contactPerson">
-            </div>
-            <div class="field">
-              <label for="email">Email</label>
-              <input id="email" name="email" type="email" autocomplete="email">
-            </div>
-            <div class="field">
-              <label for="phone">Contact Details</label>
-              <input id="phone" name="phone" inputmode="tel" autocomplete="tel">
-            </div>
-            <div class="field">
-              <label for="gmOwner">G.M. Contact Person</label>
-              <input id="gmOwner" name="gmOwner">
-            </div>
-            <div class="field">
-              <label for="status">Status</label>
-              <select id="status" name="status">
-                <option value="New Lead">New Lead</option>
-                <option value="Follow Up">Follow Up</option>
-                <option value="Contract Sent">Contract Sent</option>
-                <option value="Displayed">Displayed</option>
-                <option value="Waiting">Waiting</option>
-                <option value="Not Interested">Not Interested</option>
-                <option value="Closed">Closed</option>
-              </select>
-            </div>
-            <div class="field wide">
-              <label for="interests">Interests</label>
-              <input id="interests" name="interests" placeholder="Example: SERES 5, DFSK 500">
-            </div>
-            <div class="field">
-              <label for="action">G.M. Actions</label>
-              <input id="action" name="action" placeholder="Example: Waiting reply">
-            </div>
-            <div class="field full">
-              <label for="notes">Notes</label>
-              <textarea id="notes" name="notes"></textarea>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn" id="clearForm" type="button">Clear</button>
-            <button class="btn primary" type="submit">Save Entry</button>
-          </div>
-        </form>
-      </div>
-    </section>
-
-    <section class="dashboard">
-      <article class="panel">
-        <div class="panel-head">
-          <h2>Company Master Data</h2>
-          <div>
-            <span id="resultCount" class="pill">0 records</span>
-            <span id="saveState" class="save-state">Saved permanently in this browser</span>
-          </div>
-        </div>
-        <div class="panel-body">
-          <div class="filters">
-            <div class="field">
-              <label for="search">Search</label>
-              <input id="search" placeholder="Company, contact, action, interest, notes">
-            </div>
-            <div class="field">
-              <label for="locationFilter">Location</label>
-              <select id="locationFilter">
-                <option value="">All locations</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="ownerFilter">G.M. Owner</label>
-              <select id="ownerFilter">
-                <option value="">All owners</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="statusFilter">Status</label>
-              <select id="statusFilter">
-                <option value="">All statuses</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Company</th>
-                <th>Location</th>
-                <th>Contact Person</th>
-                <th>Email</th>
-                <th>Contact Details</th>
-                <th>Interests</th>
-                <th>Status</th>
-                <th>G.M. Actions</th>
-                <th>G.M. Owner</th>
-                <th>Notes</th>
-                <th>Delete</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-          </table>
-          <div class="empty" id="emptyState" hidden>No matching companies found.</div>
-        </div>
-      </article>
-
-      <aside class="chart-row" aria-label="Dashboard charts">
-        <article class="panel">
-          <div class="panel-head">
-            <h2>Locations</h2>
-          </div>
-          <div class="panel-body">
-            <div id="locationBars" class="chart-row"></div>
-          </div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-head">
-            <h2>G.M. Owners</h2>
-          </div>
-          <div class="panel-body">
-            <div id="ownerBars" class="chart-row"></div>
-          </div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-head">
-            <h2>Company Status</h2>
-          </div>
-          <div class="panel-body">
-            <div class="status-list" id="statusSummary"></div>
-          </div>
-        </article>
-      </aside>
-    </section>
-  </main>
-
-  <script>
-    const STORAGE_KEY = "jv-dashboard-master-data-v1";
-    const STATUS_OPTIONS = ["New Lead", "Follow Up", "Contract Sent", "Displayed", "Waiting", "Not Interested", "Closed"];
-    const DELETE_PASSWORD = "admin123";
-
-    const seedData = [
-      { no: 1, company: "Al Andaleeb", location: "Dubai", contactPerson: "Mr Danee", email: "andaleeb@gmail.com", phone: "521589658", interests: "seres(sf-evr5)&dfsk600", action: "Pending", gmOwner: "Nurhan", notes: "He wants to raise the percentage to 10%" },
-      { no: 2, company: "AlBahia", location: "Dubai", contactPerson: "Mr Danee&Mr Samer", email: "", phone: "585859493", interests: "All Models", action: "sent 3 cars", gmOwner: "Khaled", notes: "2 cars under pdi" },
-      { no: 3, company: "Arion Motors", location: "Dubai", contactPerson: "thriefty", email: "", phone: "507586773", interests: "2seres&2Dfsk", action: "The cars were displayed", gmOwner: "Khaled", notes: "" },
-      { no: 4, company: "Mars", location: "Dubai", contactPerson: "Mr Ahmed", email: "", phone: "555505562", interests: "Sf&5Evr", action: "Amending some contract clauses", gmOwner: "Khaled", notes: "" },
-      { no: 5, company: "Emco", location: "A.D", contactPerson: "Mr Ahmed", email: "", phone: "557902000", interests: "All Models", action: "All details sent", gmOwner: "Ahmed Abdallah", notes: "Waiting his reply" },
-      { no: 6, company: "Auto Nation", location: "RAK", contactPerson: "Mr.Ajesh Nambiar", email: "Ajesh@autonationservices.ae", phone: "050 2037200", interests: "Dfsk 500,SERES 5", action: "Contract Sent", gmOwner: "Maryam Mehmood", notes: "Waiting for signed contract" },
-      { no: 7, company: "SV Motors", location: "RAK", contactPerson: "Mr. Naser Balooshi", email: "", phone: "501617090", interests: "seres", action: "Waiting Trade License", gmOwner: "Maryam Mehmood", notes: "Waiting for Renewed Trade License" },
-      { no: 8, company: "Al badr Showroom", location: "Sharjah", contactPerson: "Mr.Falah", email: "", phone: "585749294", interests: "seres", action: "Waiting for Mr.elie reply if the percentage can be increased", gmOwner: "Maryam Mehmood", notes: "Need More Percentage of comission" },
-      { no: 9, company: "Al Majdouie Motors", location: "The Eastern Province Saudi Arabia", contactPerson: "Mr. Abdel Basset (mediator)", email: "ABDELBASEETGHONIM@GMAIL.COM", phone: "528615475", interests: "", action: "Visit our showroom SZR - Interest in EVR - Export prices shared - waiting his response", gmOwner: "", notes: "" },
-      { no: 10, company: "Wahet Al Sharq", location: "Souq Al Haraj - Sharjah", contactPerson: "Ramy (mediator)", email: "-", phone: "585139707", interests: "", action: "Ahmed Mahmoud visit his showroom in Sharjah - Interest in DFSK for Export to Syria - Able to display SERES and DFSK - Prices & display contract shared - waiting to send him the cars for display", gmOwner: "", notes: "" },
-      { no: 11, company: "Ard Al Rawdah", location: "Souq Al Haraj - Sharjah", contactPerson: "Abu Yousef Ghonaim", email: "-", phone: "559974479", interests: "", action: "Ahmed Mahmoud visit his showroom in Sharjah - Interest in SERES for display - waiting to send him the cars for display", gmOwner: "", notes: "" },
-      { no: 12, company: "Syarti showroom", location: "Al Aweer Auto Market - Dubai", contactPerson: "Ramy (mediator)", email: "youssefhabib@hotmail.com", phone: "585139707", interests: "", action: "Ahmed Mahmoud visit his showroom in Dubai - waiting his response to send the cars for display", gmOwner: "", notes: "" },
-      { no: 13, company: "Syan Luxury Cars", location: "Al Qouz - Dubai", contactPerson: "Mohamed", email: "", phone: "522222559", interests: "", action: "Ahmed Mahmoud visit his showroom in Dubai - Interest in SERES for Export to Algeria - they will visit our showroom this week", gmOwner: "", notes: "" },
-      { no: 14, company: "Care car", location: "Ajman", contactPerson: "Mr. Abdel Basset (mediator)", email: "-", phone: "528615475", interests: "", action: "Ahmed Mahmoud will visit his showroom in Ajman this week", gmOwner: "", notes: "" },
-      { no: 15, company: "Honey Jidosha Motors", location: "Souq Al Haraj - Sharjah", contactPerson: "Hossam Al Gebali", email: "-", phone: "529797769", interests: "", action: "Ahmed Mahmoud will visit his showroom in Sharjah this week", gmOwner: "", notes: "" },
-      { no: 16, company: "Renty - Rent Car", location: "Al Qouz - Dubai", contactPerson: "Not interested", email: "", phone: "", interests: "", action: "", gmOwner: "", notes: "" },
-      { no: 17, company: "GTA", location: "Al Qouz - Dubai", contactPerson: "Not interested", email: "", phone: "", interests: "", action: "", gmOwner: "", notes: "" },
-      { no: 18, company: "Manchester Auto", location: "Al Qouz - Dubai", contactPerson: "Not interested", email: "", phone: "", interests: "", action: "", gmOwner: "", notes: "" }
-    ];
-
-    let records = loadRecords();
-    let deleteUnlocked = false;
-
-    const els = {
-      kpiTotal: document.getElementById("kpiTotal"),
-      kpiTotalSub: document.getElementById("kpiTotalSub"),
-      kpiFollowUp: document.getElementById("kpiFollowUp"),
-      kpiLocations: document.getElementById("kpiLocations"),
-      kpiOwners: document.getElementById("kpiOwners"),
-      topLocation: document.getElementById("topLocation"),
-      topOwner: document.getElementById("topOwner"),
-      locationBars: document.getElementById("locationBars"),
-      ownerBars: document.getElementById("ownerBars"),
-      statusSummary: document.getElementById("statusSummary"),
-      tableBody: document.getElementById("tableBody"),
-      resultCount: document.getElementById("resultCount"),
-      saveState: document.getElementById("saveState"),
-      emptyState: document.getElementById("emptyState"),
-      search: document.getElementById("search"),
-      locationFilter: document.getElementById("locationFilter"),
-      ownerFilter: document.getElementById("ownerFilter"),
-      statusFilter: document.getElementById("statusFilter"),
-      formDrawer: document.getElementById("formDrawer"),
-      entryForm: document.getElementById("entryForm")
-    };
-
-    document.getElementById("toggleForm").addEventListener("click", () => {
-      els.formDrawer.classList.toggle("open");
-      if (els.formDrawer.classList.contains("open")) {
-        document.getElementById("company").focus();
-      }
-    });
-
-    document.getElementById("clearForm").addEventListener("click", () => els.entryForm.reset());
-    document.getElementById("exportCsv").addEventListener("click", exportCsv);
-    document.getElementById("resetData").addEventListener("click", resetData);
-    els.search.addEventListener("input", render);
-    els.locationFilter.addEventListener("change", render);
-    els.ownerFilter.addEventListener("change", render);
-    els.statusFilter.addEventListener("change", render);
-    els.tableBody.addEventListener("change", (event) => {
-      if (!event.target.matches("[data-edit-field]")) return;
-      const record = records.find((item) => String(item.no) === event.target.dataset.recordNo);
-      if (!record) return;
-      record[event.target.dataset.editField] = clean(event.target.value);
-      saveRecords();
-      showSaved("Update saved permanently");
-      render();
-    });
-    els.tableBody.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-delete-record]");
-      if (!button) return;
-      const record = records.find((item) => String(item.no) === button.dataset.deleteRecord);
-      if (!record) return;
-      if (!deleteUnlocked) {
-        const password = prompt("Enter delete password");
-        if (password !== DELETE_PASSWORD) {
-          alert("Incorrect password. Delete cancelled.");
-          return;
-        }
-        deleteUnlocked = true;
-      }
-      if (!confirm(`Delete ${record.company || "this company"} permanently?`)) return;
-      records = records.filter((item) => String(item.no) !== button.dataset.deleteRecord);
-      saveRecords();
-      showSaved("Record deleted permanently");
-      render();
-    });
-
-    els.entryForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const form = new FormData(els.entryForm);
-      const nextNo = records.reduce((max, item) => Math.max(max, Number(item.no) || 0), 0) + 1;
-      records.push({
-        no: nextNo,
-        company: clean(form.get("company")),
-        location: clean(form.get("location")),
-        contactPerson: clean(form.get("contactPerson")),
-        email: clean(form.get("email")),
-        phone: clean(form.get("phone")),
-        interests: clean(form.get("interests")),
-        status: clean(form.get("status")) || "New Lead",
-        action: clean(form.get("action")),
-        gmOwner: clean(form.get("gmOwner")),
-        notes: clean(form.get("notes"))
-      });
-      saveRecords();
-      showSaved("New entry saved permanently");
-      els.entryForm.reset();
-      render();
-      els.formDrawer.classList.remove("open");
-    });
-
-    function loadRecords() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-        return normalizeRecords(Array.isArray(saved) ? saved : seedData);
-      } catch {
-        return normalizeRecords(seedData);
-      }
-    }
-
-    function saveRecords() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-    }
-
-    function showSaved(message) {
-      els.saveState.textContent = message;
-      window.clearTimeout(showSaved.timer);
-      showSaved.timer = window.setTimeout(() => {
-        els.saveState.textContent = "Saved permanently in this browser";
-      }, 2500);
-    }
-
-    function normalizeRecords(items) {
-      return items.map((item, index) => ({
-        no: Number(item.no) || index + 1,
-        company: clean(item.company),
-        location: clean(item.location),
-        contactPerson: clean(item.contactPerson),
-        email: clean(item.email),
-        phone: clean(item.phone),
-        interests: clean(item.interests),
-        status: STATUS_OPTIONS.includes(clean(item.status)) ? clean(item.status) : inferStatus(item),
-        action: clean(item.action),
-        gmOwner: clean(item.gmOwner),
-        notes: clean(item.notes)
-      }));
-    }
-
-    function clean(value) {
-      return String(value || "").replace(/\s+/g, " ").trim();
-    }
-
-    function normalize(value) {
-      return clean(value).toLowerCase();
-    }
-
-    function countBy(items, key) {
-      return items.reduce((acc, item) => {
-        const value = clean(item[key]) || "Unassigned";
-        acc[value] = (acc[value] || 0) + 1;
-        return acc;
-      }, {});
-    }
-
-    function sortedCounts(counts) {
-      return Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-    }
-
-    function isFollowUp(item) {
-      const text = normalize(`${item.status} ${item.action} ${item.notes}`);
-      if (["Follow Up", "Contract Sent", "Waiting"].includes(item.status)) return true;
-      return /pending|waiting|sent|contract|visit|display|reply|license|amending/.test(text);
-    }
-
-    function inferStatus(item) {
-      const text = normalize(`${item.contactPerson} ${item.action} ${item.notes}`);
-      if (text.includes("not interested")) return "Not Interested";
-      if (text.includes("contract")) return "Contract Sent";
-      if (text.includes("display")) return "Displayed";
-      if (/pending|waiting|reply|license|amending|visit|sent/.test(text)) return "Follow Up";
-      return "New Lead";
-    }
-
-    function getFilteredRecords() {
-      const query = normalize(els.search.value);
-      const location = els.locationFilter.value;
-      const owner = els.ownerFilter.value;
-      const status = els.statusFilter.value;
-      return records.filter((item) => {
-        const matchesQuery = !query || normalize(Object.values(item).join(" ")).includes(query);
-        const matchesLocation = !location || clean(item.location) === location;
-        const matchesOwner = !owner || clean(item.gmOwner || "Unassigned") === owner;
-        const matchesStatus = !status || clean(item.status) === status;
-        return matchesQuery && matchesLocation && matchesOwner && matchesStatus;
-      });
-    }
-
-    function renderSelect(select, values, label) {
-      const current = select.value;
-      select.innerHTML = `<option value="">${label}</option>`;
-      values.forEach((value) => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        select.appendChild(option);
-      });
-      if (values.includes(current)) select.value = current;
-    }
-
-    function renderBars(target, counts, className) {
-      const rows = sortedCounts(counts).slice(0, 7);
-      const max = Math.max(...rows.map((row) => row[1]), 1);
-      target.innerHTML = "";
-      rows.forEach(([label, value]) => {
-        const row = document.createElement("div");
-        row.className = "bar-line";
-        row.innerHTML = `
-          <div class="bar-label" title="${escapeHtml(label)}">${escapeHtml(label)}</div>
-          <div class="bar-track" aria-hidden="true"><div class="bar-fill ${className}" style="width:${Math.max(6, (value / max) * 100)}%"></div></div>
-          <strong>${value}</strong>
-        `;
-        target.appendChild(row);
-      });
-    }
-
-    function renderStatus() {
-      const statusCounts = countBy(records, "status");
-      const data = STATUS_OPTIONS
-        .map((label) => [label, statusCounts[label] || 0])
-        .filter(([, value]) => value > 0);
-      els.statusSummary.innerHTML = data.map(([label, value]) => `
-        <div class="status-chip">
-          <strong>${value}</strong>
-          <span>${label}</span>
-        </div>
-      `).join("");
-    }
-
-    function renderTable(items) {
-      els.tableBody.innerHTML = "";
-      items.forEach((item) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${escapeHtml(item.no)}</td>
-          <td><strong>${escapeHtml(item.company)}</strong></td>
-          <td>${escapeHtml(item.location)}</td>
-          <td>${escapeHtml(item.contactPerson)}</td>
-          <td>${escapeHtml(item.email)}</td>
-          <td>${escapeHtml(item.phone)}</td>
-          <td>${item.interests ? `<span class="pill">${escapeHtml(item.interests)}</span>` : ""}</td>
-          <td>
-            <select class="status-control" data-edit-field="status" data-record-no="${escapeHtml(item.no)}" aria-label="Status for ${escapeHtml(item.company)}">
-              ${STATUS_OPTIONS.map((status) => `<option value="${escapeHtml(status)}"${status === item.status ? " selected" : ""}>${escapeHtml(status)}</option>`).join("")}
-            </select>
-          </td>
-          <td>
-            <textarea class="table-textarea" data-edit-field="action" data-record-no="${escapeHtml(item.no)}" aria-label="G.M. actions for ${escapeHtml(item.company)}">${escapeHtml(item.action)}</textarea>
-          </td>
-          <td>
-            <input class="table-input" data-edit-field="gmOwner" data-record-no="${escapeHtml(item.no)}" aria-label="G.M. owner for ${escapeHtml(item.company)}" value="${escapeHtml(item.gmOwner)}">
-          </td>
-          <td class="notes">
-            <textarea class="table-textarea" data-edit-field="notes" data-record-no="${escapeHtml(item.no)}" aria-label="Notes for ${escapeHtml(item.company)}">${escapeHtml(item.notes)}</textarea>
-          </td>
-          <td>
-            <button class="btn delete-btn" type="button" data-delete-record="${escapeHtml(item.no)}" aria-label="Delete ${escapeHtml(item.company)}">Delete</button>
-          </td>
-        `;
-        els.tableBody.appendChild(row);
-      });
-      els.emptyState.hidden = items.length > 0;
-      els.resultCount.textContent = `${items.length} record${items.length === 1 ? "" : "s"}`;
-    }
-
-    function render() {
-      const locations = sortedCounts(countBy(records, "location"));
-      const owners = sortedCounts(countBy(records.map((item) => ({ ...item, gmOwner: item.gmOwner || "Unassigned" })), "gmOwner"));
-      renderSelect(els.locationFilter, locations.map(([name]) => name), "All locations");
-      renderSelect(els.ownerFilter, owners.map(([name]) => name), "All owners");
-      renderSelect(els.statusFilter, STATUS_OPTIONS.filter((status) => records.some((item) => item.status === status)), "All statuses");
-
-      els.kpiTotal.textContent = records.length;
-      els.kpiTotalSub.textContent = `${records.length} total records loaded`;
-      els.kpiFollowUp.textContent = records.filter(isFollowUp).length;
-      els.kpiLocations.textContent = locations.length;
-      els.kpiOwners.textContent = owners.filter(([name]) => name !== "Unassigned").length;
-      els.topLocation.textContent = locations[0] ? `Top location: ${locations[0][0]} (${locations[0][1]})` : "Top location: -";
-      const namedOwners = owners.filter(([name]) => name !== "Unassigned");
-      els.topOwner.textContent = namedOwners[0] ? `Top owner: ${namedOwners[0][0]} (${namedOwners[0][1]})` : "Top owner: -";
-
-      renderBars(els.locationBars, countBy(records, "location"), "green");
-      renderBars(els.ownerBars, countBy(records.map((item) => ({ ...item, gmOwner: item.gmOwner || "Unassigned" })), "gmOwner"), "blue");
-      renderStatus();
-      renderTable(getFilteredRecords());
-    }
-
-    function exportCsv() {
-      const headers = ["No", "Company Name", "Location", "Contact Person", "Email", "Contact Details", "Interests", "Status", "G.M. Actions", "G.M. Contact Person", "Notes"];
-      const keys = ["no", "company", "location", "contactPerson", "email", "phone", "interests", "status", "action", "gmOwner", "notes"];
-      const lines = [headers.join(",")].concat(records.map((item) => keys.map((key) => csvCell(item[key])).join(",")));
-      download("joint-venture-master-data.csv", lines.join("\n"), "text/csv");
-    }
-
-    function resetData() {
-      if (!confirm("Reset the dashboard to the original Excel data?")) return;
-      records = normalizeRecords(seedData);
-      saveRecords();
-      showSaved("Original data restored");
-      render();
-    }
-
-    function csvCell(value) {
-      return `"${String(value || "").replace(/"/g, '""')}"`;
-    }
-
-    function download(filename, content, type) {
-      const blob = new Blob([content], { type });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    }
-
-    function escapeHtml(value) {
-      return String(value || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    render();
-  </script>
-</body>
-</html>
+const SHEET_ID = "1MIf07luEqKvj3IHU4-4GAeL7RrhUuksUbsLg5s-0_P0";
+const SHEET_NAME = "Sheet1";
+const DELETE_PASSWORD = "admin123";
+
+const HEADERS = [
+  "No",
+  "Company Name",
+  "Location",
+  "Contact Person",
+  "Email",
+  "Contact Details",
+  "Interests",
+  "Status",
+  "G.M. Actions",
+  "G.M. Contact Person",
+  "Notes"
+];
+
+function doGet(e) {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  const values = sheet.getDataRange().getValues();
+  const rows = values.slice(1).filter(row => row.some(cell => cell !== ""));
+
+  const data = rows.map(row => ({
+    no: row[0],
+    company: row[1],
+    location: row[2],
+    contactPerson: row[3],
+    email: row[4],
+    phone: row[5],
+    interests: row[6],
+    status: row[7],
+    action: row[8],
+    gmOwner: row[9],
+    notes: row[10]
+  }));
+
+  return jsonResponse(data, e && e.parameter && e.parameter.callback);
+}
+
+function doPost(e) {
+  const body = JSON.parse(e.postData.contents);
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+
+  if (body.type === "add") {
+    const nextNo = getNextNo(sheet);
+    const record = body.record || {};
+
+    sheet.appendRow([
+      nextNo,
+      record.company || "",
+      record.location || "",
+      record.contactPerson || "",
+      record.email || "",
+      record.phone || "",
+      record.interests || "",
+      record.status || "New Lead",
+      record.action || "",
+      record.gmOwner || "",
+      record.notes || ""
+    ]);
+
+    return jsonResponse({ success: true, no: nextNo });
+  }
+
+  if (body.type === "update") {
+    const row = findRowByNo(sheet, body.no);
+    if (!row) return jsonResponse({ success: false, error: "Record not found" });
+
+    const column = HEADERS.indexOf(body.field) + 1;
+    if (column < 1) return jsonResponse({ success: false, error: "Invalid field" });
+
+    sheet.getRange(row, column).setValue(body.value || "");
+    return jsonResponse({ success: true });
+  }
+
+  if (body.type === "delete") {
+    if (body.password !== DELETE_PASSWORD) {
+      return jsonResponse({ success: false, error: "Incorrect delete password" });
+    }
+
+    const row = findRowByNo(sheet, body.no);
+    if (!row) return jsonResponse({ success: false, error: "Record not found" });
+
+    sheet.deleteRow(row);
+    return jsonResponse({ success: true });
+  }
+
+  return jsonResponse({ success: false, error: "Unknown request" });
+}
+
+function getNextNo(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 1;
+
+  const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat();
+  const numbers = values.map(Number).filter(num => !isNaN(num));
+  return numbers.length ? Math.max(...numbers) + 1 : 1;
+}
+
+function findRowByNo(sheet, no) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+
+  const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat();
+  const index = values.findIndex(value => String(value) === String(no));
+  return index === -1 ? null : index + 2;
+}
+
+function jsonResponse(data, callback) {
+  const json = JSON.stringify(data);
+  if (callback) {
+    return ContentService
+      .createTextOutput(`${callback}(${json});`)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService
+    .createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
+}
