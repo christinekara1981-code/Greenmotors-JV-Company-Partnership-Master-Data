@@ -659,6 +659,7 @@
 
   <script>
     const STORAGE_KEY = "jv-dashboard-master-data-v1";
+    const PENDING_ADDS_KEY = "jv-dashboard-pending-adds-v1";
     const API_URL = "https://script.google.com/macros/s/AKfycbydQOVg8B329LKUNZdNpI2W0lXNSdQa2FSeyPHhxZnU5FogCKLTBnCMk-p8t579oOsh/exec";
     const STATUS_OPTIONS = ["New Lead", "Follow Up", "Contract Sent", "Displayed", "Waiting", "Not Interested", "Closed"];
     const DELETE_PASSWORD = "admin123";
@@ -698,6 +699,7 @@
     ];
 
     let records = loadRecords();
+    let pendingAdds = loadPendingAdds();
     let deleteUnlocked = false;
     let deletePasswordSession = "";
 
@@ -746,16 +748,25 @@
       const field = event.target.dataset.editField;
       const value = field === "no" ? Number(event.target.value) || clean(event.target.value) : clean(event.target.value);
       record[field] = value;
+      const pendingRecord = pendingAdds.find((item) => String(item.no) === String(oldNo));
+      if (pendingRecord) {
+        pendingRecord[field] = value;
+        savePendingAdds();
+      }
       saveRecords();
       showSaved("Saving update to Google Sheet...");
       render();
-      await postSheetAction({
-        type: "update",
-        no: oldNo,
-        field: SHEET_FIELDS[field],
-        value
-      });
-      await loadOnlineRecords("Update saved to Google Sheet");
+      try {
+        await postSheetAction({
+          type: "update",
+          no: oldNo,
+          field: SHEET_FIELDS[field],
+          value
+        });
+        await loadOnlineRecords("Update saved to Google Sheet");
+      } catch (error) {
+        showSaved(`Google Sheet save failed: ${error.message}`);
+      }
     });
     els.tableBody.addEventListener("click", async (event) => {
       const button = event.target.closest("[data-delete-record]");
@@ -773,11 +784,17 @@
       }
       if (!confirm(`Delete ${record.company || "this company"} permanently?`)) return;
       records = records.filter((item) => String(item.no) !== button.dataset.deleteRecord);
+      pendingAdds = pendingAdds.filter((item) => String(item.no) !== button.dataset.deleteRecord);
       saveRecords();
+      savePendingAdds();
       showSaved("Deleting from Google Sheet...");
       render();
-      await postSheetAction({ type: "delete", no: record.no, password: deletePasswordSession });
-      await loadOnlineRecords("Record deleted from Google Sheet");
+      try {
+        await postSheetAction({ type: "delete", no: record.no, password: deletePasswordSession });
+        await loadOnlineRecords("Record deleted from Google Sheet");
+      } catch (error) {
+        showSaved(`Google Sheet delete failed: ${error.message}`);
+      }
     });
 
     els.entryForm.addEventListener("submit", async (event) => {
@@ -798,13 +815,19 @@
         notes: clean(form.get("notes"))
       };
       records.push(record);
+      pendingAdds.push(record);
       saveRecords();
+      savePendingAdds();
       showSaved("Saving new entry to Google Sheet...");
       els.entryForm.reset();
       render();
       els.formDrawer.classList.remove("open");
-      await postSheetAction({ type: "add", record });
-      await waitForSheetRecord(record, "New entry saved to Google Sheet");
+      try {
+        await postSheetAction({ type: "add", record });
+        await waitForSheetRecord(record, "New entry saved to Google Sheet");
+      } catch (error) {
+        showSaved(`Google Sheet save failed: ${error.message}`);
+      }
     });
 
     function loadRecords() {
@@ -818,6 +841,19 @@
 
     function saveRecords() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function loadPendingAdds() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(PENDING_ADDS_KEY) || "[]");
+        return normalizeRecords(Array.isArray(saved) ? saved : []);
+      } catch {
+        return [];
+      }
+    }
+
+    function savePendingAdds() {
+      localStorage.setItem(PENDING_ADDS_KEY, JSON.stringify(pendingAdds));
     }
 
     function showSaved(message) {
@@ -834,7 +870,9 @@
         showSaved("Loading Google Sheet...");
         const data = await fetchSheetRecords();
         if (!Array.isArray(data)) throw new Error("Google Sheet response was not a list");
-        records = normalizeRecords(data);
+        const sheetRecords = normalizeRecords(data);
+        reconcilePendingAdds(sheetRecords);
+        records = mergeVisibleRecords(sheetRecords);
         saveRecords();
         render();
         showSaved(successMessage);
@@ -855,17 +893,14 @@
     }
 
     async function waitForSheetRecord(record, successMessage) {
-      const localCopy = records.slice();
       for (let attempt = 0; attempt < 5; attempt += 1) {
         await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 2500 : 1500));
         try {
           const sheetRecords = normalizeRecords(await fetchSheetRecords());
-          const found = sheetRecords.some((item) =>
-            String(item.no) === String(record.no) ||
-            (normalize(item.company) === normalize(record.company) && normalize(item.phone) === normalize(record.phone))
-          );
+          const found = sheetRecords.some((item) => isSameRecord(item, record));
           if (found) {
-            records = sheetRecords;
+            reconcilePendingAdds(sheetRecords);
+            records = mergeVisibleRecords(sheetRecords);
             saveRecords();
             render();
             showSaved(successMessage);
@@ -876,10 +911,44 @@
         }
         showSaved("Still syncing with Google Sheet...");
       }
-      records = localCopy;
+      records = mergeVisibleRecords(records);
       saveRecords();
       render();
       showSaved("Still syncing. Click Reload Sheet in a few seconds.");
+    }
+
+    function mergeVisibleRecords(sheetRecords) {
+      const merged = sheetRecords.slice();
+      records.forEach((local) => {
+        if (!merged.some((item) => isSameRecord(item, local))) {
+          merged.push(local);
+        }
+      });
+      pendingAdds.forEach((pending) => {
+        if (!merged.some((item) => isSameRecord(item, pending))) {
+          merged.push(pending);
+        }
+      });
+      return normalizeRecords(merged);
+    }
+
+    function reconcilePendingAdds(sheetRecords) {
+      pendingAdds = pendingAdds.filter((pending) => !sheetRecords.some((item) => isSameRecord(item, pending)));
+      savePendingAdds();
+    }
+
+    function isSameRecord(a, b) {
+      return String(a.no) === String(b.no) ||
+        (
+          normalize(a.company) === normalize(b.company) &&
+          normalize(a.location) === normalize(b.location) &&
+          normalize(a.contactPerson) === normalize(b.contactPerson)
+        ) ||
+        (
+          normalize(a.company) === normalize(b.company) &&
+          normalize(a.phone) &&
+          normalize(a.phone) === normalize(b.phone)
+        );
     }
 
     function loadOnlineRecordsJsonp() {
@@ -904,13 +973,32 @@
     }
 
     async function postSheetAction(payload) {
-      await fetch(API_URL, {
-        method: "POST",
-        mode: "no-cors",
-        body: JSON.stringify(payload),
-        headers: { "Content-Type": "text/plain;charset=utf-8" }
+      const result = await postSheetActionJsonp(payload);
+      if (!result || result.success !== true) {
+        throw new Error((result && result.error) || "Google Sheet save failed");
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 600));
+    }
+
+    function postSheetActionJsonp(payload) {
+      return new Promise((resolve, reject) => {
+        const callbackName = `jvSheetSave_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const script = document.createElement("script");
+        const cleanup = () => {
+          delete window[callbackName];
+          script.remove();
+        };
+        window[callbackName] = (data) => {
+          cleanup();
+          resolve(data);
+        };
+        script.onerror = () => {
+          cleanup();
+          reject(new Error("Could not save to Google Sheet"));
+        };
+        script.src = `${API_URL}?callback=${callbackName}&payload=${encodeURIComponent(JSON.stringify(payload))}&_=${Date.now()}`;
+        document.body.appendChild(script);
       });
-      await new Promise((resolve) => window.setTimeout(resolve, 1200));
     }
 
     function normalizeRecords(items) {
