@@ -804,7 +804,7 @@
       render();
       els.formDrawer.classList.remove("open");
       await postSheetAction({ type: "add", record });
-      await loadOnlineRecords("New entry saved to Google Sheet");
+      await waitForSheetRecord(record, "New entry saved to Google Sheet");
     });
 
     function loadRecords() {
@@ -832,14 +832,7 @@
       if (!API_URL) return;
       try {
         showSaved("Loading Google Sheet...");
-        let data;
-        try {
-          const response = await fetch(`${API_URL}?_=${Date.now()}`, { method: "GET" });
-          if (!response.ok) throw new Error(`Google Sheet returned ${response.status}`);
-          data = await response.json();
-        } catch {
-          data = await loadOnlineRecordsJsonp();
-        }
+        const data = await fetchSheetRecords();
         if (!Array.isArray(data)) throw new Error("Google Sheet response was not a list");
         records = normalizeRecords(data);
         saveRecords();
@@ -849,6 +842,44 @@
         showSaved("Could not reach Google Sheet. Showing saved browser copy.");
         console.warn(error);
       }
+    }
+
+    async function fetchSheetRecords() {
+      try {
+        const response = await fetch(`${API_URL}?_=${Date.now()}`, { method: "GET" });
+        if (!response.ok) throw new Error(`Google Sheet returned ${response.status}`);
+        return await response.json();
+      } catch {
+        return await loadOnlineRecordsJsonp();
+      }
+    }
+
+    async function waitForSheetRecord(record, successMessage) {
+      const localCopy = records.slice();
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 2500 : 1500));
+        try {
+          const sheetRecords = normalizeRecords(await fetchSheetRecords());
+          const found = sheetRecords.some((item) =>
+            String(item.no) === String(record.no) ||
+            (normalize(item.company) === normalize(record.company) && normalize(item.phone) === normalize(record.phone))
+          );
+          if (found) {
+            records = sheetRecords;
+            saveRecords();
+            render();
+            showSaved(successMessage);
+            return;
+          }
+        } catch (error) {
+          console.warn(error);
+        }
+        showSaved("Still syncing with Google Sheet...");
+      }
+      records = localCopy;
+      saveRecords();
+      render();
+      showSaved("Still syncing. Click Reload Sheet in a few seconds.");
     }
 
     function loadOnlineRecordsJsonp() {
@@ -879,7 +910,7 @@
         body: JSON.stringify(payload),
         headers: { "Content-Type": "text/plain;charset=utf-8" }
       });
-      await new Promise((resolve) => window.setTimeout(resolve, 900));
+      await new Promise((resolve) => window.setTimeout(resolve, 1200));
     }
 
     function normalizeRecords(items) {
